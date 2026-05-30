@@ -2,35 +2,15 @@
 
 namespace Aghfatehi\Tamara\Services;
 
-use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 
 class TamaraService
 {
-    protected Client $client;
-
     protected array $config;
 
     public function __construct()
     {
         $this->config = config('tamara');
-    }
-
-    protected function client(): Client
-    {
-        if (!isset($this->client)) {
-            $this->client = new Client([
-                'base_uri' => $this->baseUrl(),
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->config['api_token'],
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                ],
-                'timeout' => 30,
-            ]);
-        }
-
-        return $this->client;
     }
 
     public function baseUrl(): string
@@ -141,11 +121,58 @@ class TamaraService
         ]);
     }
 
+    protected function sendRequest(string $method, string $path, array $data = []): array
+    {
+        $url = $this->baseUrl() . $path;
+
+        if ($method === 'GET' && !empty($data)) {
+            $url .= '?' . http_build_query($data);
+        }
+
+        $headers = [
+            'Authorization: Bearer ' . $this->config['api_token'],
+            'Accept: application/json',
+            'Content-Type: application/json',
+        ];
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        ]);
+
+        if (in_array($method, ['POST', 'PUT', 'PATCH'])) {
+            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+        }
+
+        $response = curl_exec($curl);
+        $error = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($error) {
+            Log::error('Tamara API cURL Error: ' . $error, [
+                'method' => $method,
+                'path' => $path,
+                'http_code' => $httpCode,
+            ]);
+            throw new \Exception('Tamara API Error: ' . $error);
+        }
+
+        return json_decode($response, true) ?? [];
+    }
+
     protected function get(string $path, array $query = []): array
     {
         try {
-            $response = $this->client()->get($path, ['query' => $query]);
-            return json_decode($response->getBody()->getContents(), true) ?? [];
+            return $this->sendRequest('GET', $path, $query);
         } catch (\Throwable $e) {
             Log::error('Tamara API GET Error: ' . $e->getMessage(), [
                 'path' => $path,
@@ -158,8 +185,7 @@ class TamaraService
     protected function post(string $path, array $body = []): array
     {
         try {
-            $response = $this->client()->post($path, ['json' => $body]);
-            return json_decode($response->getBody()->getContents(), true) ?? [];
+            return $this->sendRequest('POST', $path, $body);
         } catch (\Throwable $e) {
             Log::error('Tamara API POST Error: ' . $e->getMessage(), [
                 'path' => $path,
@@ -172,8 +198,7 @@ class TamaraService
     protected function put(string $path, array $body = []): array
     {
         try {
-            $response = $this->client()->put($path, ['json' => $body]);
-            return json_decode($response->getBody()->getContents(), true) ?? [];
+            return $this->sendRequest('PUT', $path, $body);
         } catch (\Throwable $e) {
             Log::error('Tamara API PUT Error: ' . $e->getMessage(), [
                 'path' => $path,
@@ -186,8 +211,7 @@ class TamaraService
     protected function delete(string $path): array
     {
         try {
-            $response = $this->client()->delete($path);
-            return json_decode($response->getBody()->getContents(), true) ?? [];
+            return $this->sendRequest('DELETE', $path);
         } catch (\Throwable $e) {
             Log::error('Tamara API DELETE Error: ' . $e->getMessage(), [
                 'path' => $path,
