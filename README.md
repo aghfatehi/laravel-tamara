@@ -165,7 +165,7 @@ $requestbody = [
     ],
     'platform' => 'Laravel',
     'is_mobile' => false,
-    'locale' => 'en_US',
+    'locale' => 'en_US',//ar_SA for Arabic or en_US for English
 ];
 
 // Create checkout session
