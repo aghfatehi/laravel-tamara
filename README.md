@@ -19,7 +19,7 @@ A professional Laravel package for integrating [Tamara](https://tamara.co) - the
 - ✅ Multi-currency support (SAR, AED, KWD, BHD, QAR, OMR)
 - ✅ Multi-country support (SA, AE, KW, BH, QA, OM)
 - ✅ In-store checkout support
-- ✅ Guzzle HTTP client (no raw cURL)
+- ✅ cURL HTTP client (no Guzzle)
 - ✅ Configurable routes prefix & middleware
 - ✅ Transaction logging migration
 - ✅ Laravel 10, 11, 12 & 13 compatible
@@ -98,11 +98,39 @@ use Aghfatehi\Tamara\Facades\Tamara;
 // Get available payment types
 $types = Tamara::getPaymentTypes('SA', 'SAR', 500);
 
-// Create a checkout session
-$response = Tamara::createCheckout([
-    'total_amount' => ['amount' => 500, 'currency' => 'SAR'],
-    'order_reference_id' => 'ORD-' . uniqid(),
-    'order_number' => 'INV-2024-001',
+// Build checkout request body with example values
+$requestbody = [
+    'total_amount' => [
+        'amount' => 500,
+        'currency' => 'SAR',
+    ],
+    'shipping_amount' => [
+        'amount' => 0,
+        'currency' => 'SAR',
+    ],
+    'tax_amount' => [
+        'amount' => 0,
+        'currency' => 'SAR',
+    ],
+    'order_reference_id' => uniqid('tamara_'),
+    'order_number' => 'ORD-' . time(),
+    'items' => [
+        [
+            'name' => 'Order Payment',
+            'type' => 'Digital',
+            'reference_id' => '1',
+            'sku' => 'PAYMENT-001',
+            'quantity' => 1,
+            'unit_price' => [
+                'amount' => 500,
+                'currency' => 'SAR',
+            ],
+            'total_amount' => [
+                'amount' => 500,
+                'currency' => 'SAR',
+            ],
+        ],
+    ],
     'consumer' => [
         'email' => 'customer@example.com',
         'first_name' => 'Ahmed',
@@ -110,17 +138,48 @@ $response = Tamara::createCheckout([
         'phone_number' => '500000000',
     ],
     'country_code' => 'SA',
+    'description' => 'Payment for order',
     'merchant_url' => [
         'success' => route('tamara.callback'),
         'failure' => route('tamara.failure'),
         'cancel' => route('tamara.cancel'),
         'notification' => route('tamara.webhook'),
     ],
-]);
+    'payment_type' => 'PAY_BY_INSTALMENTS',
+    'instalments' => 3,
+    'billing_address' => [
+        'city' => 'Riyadh',
+        'country_code' => 'SA',
+        'first_name' => 'Ahmed',
+        'last_name' => 'Ali',
+        'line1' => 'Default Address',
+        'phone_number' => '500000000',
+    ],
+    'shipping_address' => [
+        'city' => 'Riyadh',
+        'country_code' => 'SA',
+        'first_name' => 'Ahmed',
+        'last_name' => 'Ali',
+        'line1' => 'Default Address',
+        'phone_number' => '500000000',
+    ],
+    'platform' => 'Laravel',
+    'is_mobile' => false,
+    'locale' => 'en_US',
+];
+
+// Create checkout session
+$response = Tamara::createCheckout($requestbody);
 
 // Redirect customer to Tamara checkout
 if (isset($response['checkout_url'])) {
     return redirect()->away($response['checkout_url']);
+}
+
+// Handle errors
+if (isset($response['errors'])) {
+    $errorMessage = $response['errors'][0]['message'] ?? 'Payment failed';
+    return back()->with('error', $errorMessage);
 }
 ```
 
