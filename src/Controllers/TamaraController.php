@@ -11,6 +11,20 @@ use Illuminate\Support\Facades\Redirect;
 
 class TamaraController extends Controller
 {
+    protected function log(string $message, array $context = []): void
+    {
+        if (config('tamara.logging')) {
+            Log::info($message, $context);
+        }
+    }
+
+    protected function logError(string $message, array $context = []): void
+    {
+        if (config('tamara.logging')) {
+            Log::error($message, $context);
+        }
+    }
+
     public function getPaymentTypes(Request $request)
     {
         try {
@@ -23,14 +37,14 @@ class TamaraController extends Controller
 
             return response()->json($types);
         } catch (\Throwable $e) {
-            Log::error('Tamara getPaymentTypes failed: ' . $e->getMessage());
+            $this->logError('Tamara getPaymentTypes failed: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     public function pay(Request $request)
     {
-        Log::info('Initiating Tamara checkout...');
+        $this->log('Initiating Tamara checkout...');
 
         $amount = $request->input('amount', 0);
         $currency = config('tamara.currency', 'SAR');
@@ -98,7 +112,7 @@ class TamaraController extends Controller
 
         try {
             $response = Tamara::createCheckout($requestBody);
-            Log::info('Tamara Checkout Response:', $response);
+            $this->log('Tamara Checkout Response:', $response);
 
             if (isset($response['errors'])) {
                 $errorMessage = $response['errors'][0]['message'] ?? 'Payment failed';
@@ -114,14 +128,14 @@ class TamaraController extends Controller
 
             return redirect()->back()->withErrors(['error' => 'Payment failed: No checkout URL returned']);
         } catch (\Throwable $e) {
-            Log::error('Tamara Checkout Error: ' . $e->getMessage());
+            $this->logError('Tamara Checkout Error: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
     public function callback(Request $request)
     {
-        Log::info('Tamara Callback:', $request->all());
+        $this->log('Tamara Callback:', $request->all());
 
         $orderId = $request->input('order_id') ?? Session::get('tamara_order_id');
 
@@ -131,7 +145,7 @@ class TamaraController extends Controller
 
         try {
             $response = Tamara::getOrder($orderId);
-            Log::info('Tamara Order Status:', $response);
+            $this->log('Tamara Order Status:', $response);
 
             $status = $response['status'] ?? '';
 
@@ -144,32 +158,32 @@ class TamaraController extends Controller
 
             return redirect()->route('home')->withErrors(['error' => __('Payment was not completed')]);
         } catch (\Throwable $e) {
-            Log::error('Tamara Callback Error: ' . $e->getMessage());
+            $this->logError('Tamara Callback Error: ' . $e->getMessage());
             return redirect()->route('home')->withErrors(['error' => $e->getMessage()]);
         }
     }
 
     public function cancel(Request $request)
     {
-        Log::info('Tamara Payment Cancelled');
+        $this->log('Tamara Payment Cancelled');
         return redirect()->route('home')->with('warning', __('Payment was cancelled'));
     }
 
     public function failure(Request $request)
     {
-        Log::info('Tamara Payment Failed');
+        $this->log('Tamara Payment Failed');
         return redirect()->route('home')->withErrors(['error' => __('Payment failed')]);
     }
 
     public function webhook(Request $request)
     {
-        Log::info('Tamara Webhook Received:', $request->all());
+        $this->log('Tamara Webhook Received:', $request->all());
 
         $event = $request->input('event_type', '');
         $orderId = $request->input('order_id', '');
         $status = $request->input('status', '');
 
-        Log::info("Tamara Webhook - Event: {$event}, Order: {$orderId}, Status: {$status}");
+        $this->log("Tamara Webhook - Event: {$event}, Order: {$orderId}, Status: {$status}");
 
         return response()->json(['success' => true]);
     }
@@ -186,7 +200,7 @@ class TamaraController extends Controller
             $response = Tamara::authoriseOrder($orderId);
             return response()->json($response);
         } catch (\Throwable $e) {
-            Log::error('Tamara Authorise Error: ' . $e->getMessage());
+            $this->logError('Tamara Authorise Error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

@@ -158,15 +158,40 @@ class TamaraService
         curl_close($curl);
 
         if ($error) {
-            Log::error('Tamara API cURL Error: ' . $error, [
-                'method' => $method,
-                'path' => $path,
-                'http_code' => $httpCode,
-            ]);
+            if ($this->config['logging']) {
+                Log::error('Tamara API cURL Error: ' . $error, [
+                    'method' => $method,
+                    'path' => $path,
+                    'http_code' => $httpCode,
+                ]);
+            }
             throw new \Exception('Tamara API Error: ' . $error);
         }
 
+        if ($this->config['logging']) {
+            Log::info('Tamara API Response', [
+                'method' => $method,
+                'path' => $path,
+                'http_code' => $httpCode,
+                'response' => $response,
+            ]);
+        }
+
         return json_decode($response, true) ?? [];
+    }
+
+    protected function log(string $message, array $context = []): void
+    {
+        if ($this->config['logging']) {
+            Log::info($message, $context);
+        }
+    }
+
+    protected function logError(string $message, array $context = []): void
+    {
+        if ($this->config['logging']) {
+            Log::error($message, $context);
+        }
     }
 
     protected function get(string $path, array $query = []): array
@@ -174,7 +199,7 @@ class TamaraService
         try {
             return $this->sendRequest('GET', $path, $query);
         } catch (\Throwable $e) {
-            Log::error('Tamara API GET Error: ' . $e->getMessage(), [
+            $this->logError('Tamara API GET Error: ' . $e->getMessage(), [
                 'path' => $path,
                 'query' => $query,
             ]);
@@ -187,7 +212,7 @@ class TamaraService
         try {
             return $this->sendRequest('POST', $path, $body);
         } catch (\Throwable $e) {
-            Log::error('Tamara API POST Error: ' . $e->getMessage(), [
+            $this->logError('Tamara API POST Error: ' . $e->getMessage(), [
                 'path' => $path,
                 'body' => $body,
             ]);
@@ -200,7 +225,7 @@ class TamaraService
         try {
             return $this->sendRequest('PUT', $path, $body);
         } catch (\Throwable $e) {
-            Log::error('Tamara API PUT Error: ' . $e->getMessage(), [
+            $this->logError('Tamara API PUT Error: ' . $e->getMessage(), [
                 'path' => $path,
                 'body' => $body,
             ]);
@@ -213,7 +238,7 @@ class TamaraService
         try {
             return $this->sendRequest('DELETE', $path);
         } catch (\Throwable $e) {
-            Log::error('Tamara API DELETE Error: ' . $e->getMessage(), [
+            $this->logError('Tamara API DELETE Error: ' . $e->getMessage(), [
                 'path' => $path,
             ]);
             throw $e;

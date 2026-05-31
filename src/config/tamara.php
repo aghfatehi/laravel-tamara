@@ -42,4 +42,6 @@ return [
     'payment_type' => env('TAMARA_PAYMENT_TYPE', 'PAY_BY_INSTALMENTS'),
 
     'locale' => env('TAMARA_LOCALE', 'en_US'),
+    
+    'logging' => env('TAMARA_LOGGING', true),
 ];

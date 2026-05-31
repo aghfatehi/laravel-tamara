@@ -67,6 +67,8 @@ TAMARA_CURRENCY=SAR                   # SAR, AED, KWD, BHD, QAR, OMR
 TAMARA_INSTALMENTS=3                  # Number of instalments (3, 6, 12)
 TAMARA_PAYMENT_TYPE=PAY_BY_INSTALMENTS # PAY_BY_INSTALMENTS or PAY_NEXT_MONTH
 TAMARA_LOCALE=en_US                   # en_US or ar_SA
+TAMARA_LOGGING=true                   # Enable API request/response logging
+# true = enabled | false = disabled
 TAMARA_ROUTE_PREFIX=tamara            # URL prefix for package routes
 ```
 
