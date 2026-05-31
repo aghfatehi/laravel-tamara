@@ -60,14 +60,14 @@ php artisan migrate
 Add these to your `.env` file:
 
 ```env
-TAMARA_SANDBOX_MODE=true
-TAMARA_API_TOKEN=your-api-token-here
-TAMARA_COUNTRY_CODE=SA
-TAMARA_CURRENCY=SAR
-TAMARA_INSTALMENTS=3
-TAMARA_PAYMENT_TYPE=PAY_BY_INSTALMENTS
-TAMARA_LOCALE=en_US
-TAMARA_ROUTE_PREFIX=tamara
+TAMARA_SANDBOX_MODE=true              # true = sandbox, false = production
+TAMARA_API_TOKEN=your-api-token-here  # API token from Tamara Merchant Dashboard
+TAMARA_COUNTRY_CODE=SA                # SA, AE, KW, BH, QA, OM
+TAMARA_CURRENCY=SAR                   # SAR, AED, KWD, BHD, QAR, OMR
+TAMARA_INSTALMENTS=3                  # Number of instalments (3, 6, 12)
+TAMARA_PAYMENT_TYPE=PAY_BY_INSTALMENTS # PAY_BY_INSTALMENTS or PAY_NEXT_MONTH
+TAMARA_LOCALE=en_US                   # en_US or ar_SA
+TAMARA_ROUTE_PREFIX=tamara            # URL prefix for package routes
 ```
 
 ### 4. Service Provider
@@ -100,54 +100,54 @@ $types = Tamara::getPaymentTypes('SA', 'SAR', 500);
 
 // Build checkout request body with example values
 $requestbody = [
-    'total_amount' => [
+    'total_amount' => [                          // Order total amount
         'amount' => 500,
         'currency' => 'SAR',
     ],
-    'shipping_amount' => [
+    'shipping_amount' => [                       // Shipping cost
         'amount' => 0,
         'currency' => 'SAR',
     ],
-    'tax_amount' => [
+    'tax_amount' => [                            // Tax amount
         'amount' => 0,
         'currency' => 'SAR',
     ],
-    'order_reference_id' => uniqid('tamara_'),
-    'order_number' => 'ORD-' . time(),
-    'items' => [
+    'order_reference_id' => uniqid('tamara_'),   // Unique order reference
+    'order_number' => 'ORD-' . time(),            // Merchant order number
+    'items' => [                                  // Order items (max 50)
         [
             'name' => 'Order Payment',
-            'type' => 'Digital',
-            'reference_id' => '1',
+            'type' => 'Digital',                  // Digital or Physical
+            'reference_id' => '1',                // Item ID in your system
             'sku' => 'PAYMENT-001',
             'quantity' => 1,
-            'unit_price' => [
+            'unit_price' => [                     // Price per unit
                 'amount' => 500,
                 'currency' => 'SAR',
             ],
-            'total_amount' => [
+            'total_amount' => [                   // quantity * unit_price
                 'amount' => 500,
                 'currency' => 'SAR',
             ],
         ],
     ],
-    'consumer' => [
+    'consumer' => [                               // Customer details
         'email' => 'customer@example.com',
         'first_name' => 'Ahmed',
         'last_name' => 'Ali',
-        'phone_number' => '500000000',
+        'phone_number' => '500000000',            // Without country code prefix
     ],
-    'country_code' => 'SA',
+    'country_code' => 'SA',                       // SA, AE, KW, BH, QA, OM
     'description' => 'Payment for order',
-    'merchant_url' => [
+    'merchant_url' => [                           // Callback URLs
         'success' => route('tamara.callback'),
         'failure' => route('tamara.failure'),
         'cancel' => route('tamara.cancel'),
         'notification' => route('tamara.webhook'),
     ],
-    'payment_type' => 'PAY_BY_INSTALMENTS',
-    'instalments' => 3,
-    'billing_address' => [
+    'payment_type' => 'PAY_BY_INSTALMENTS',       // PAY_BY_INSTALMENTS or PAY_NEXT_MONTH
+    'instalments' => 3,                           // 3,4 or 6
+    'billing_address' => [                        // Billing address
         'city' => 'Riyadh',
         'country_code' => 'SA',
         'first_name' => 'Ahmed',
@@ -155,7 +155,7 @@ $requestbody = [
         'line1' => 'Default Address',
         'phone_number' => '500000000',
     ],
-    'shipping_address' => [
+    'shipping_address' => [                       // Shipping address
         'city' => 'Riyadh',
         'country_code' => 'SA',
         'first_name' => 'Ahmed',
@@ -163,9 +163,9 @@ $requestbody = [
         'line1' => 'Default Address',
         'phone_number' => '500000000',
     ],
-    'platform' => 'Laravel',
-    'is_mobile' => false,
-    'locale' => 'en_US',//ar_SA for Arabic or en_US for English
+    'platform' => 'Laravel',                      // Platform name
+    'is_mobile' => false,                         // true if mobile app
+    'locale' => 'en_US',                          // en_US or ar_SA
 ];
 
 // Create checkout session
